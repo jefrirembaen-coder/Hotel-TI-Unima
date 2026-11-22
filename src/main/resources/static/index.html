@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hotel TI Unima - Reservasi Online</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --success: #16a34a;
+      --danger: #dc2626;
+      --warning: #ca8a04;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #1e293b;
+      --border: #e2e8f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); line-height: 1.6; }
+    header { background: linear-gradient(135deg, #1e3a8a, #2563eb); color: white; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    header h1 { font-size: 1.5rem; }
+    nav button { background: rgba(255,255,255,0.2); border: none; color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+    nav button:hover, nav button.active { background: white; color: var(--primary); }
+    .container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+    .view { display: none; }
+    .view.active { display: block; }
+    .card { background: var(--card); border-radius: 12px; padding: 24px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid var(--border); }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-bottom: 16px; }
+    .form-group { display: flex; flex-direction: column; }
+    .form-group label { font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: #475569; }
+    .form-group input, .form-group select, .form-group textarea { padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.95rem; }
+    .btn { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+    .btn:hover { background: var(--primary-dark); }
+    .btn-sm { padding: 6px 12px; font-size: 0.85rem; }
+    .btn-success { background: var(--success); }
+    .btn-danger { background: var(--danger); }
+    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    .btn-outline:hover { background: #f1f5f9; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+    th { background: #f1f5f9; color: #475569; font-weight: 600; }
+    .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
+    .status-MENUNGGU { background: #fef08a; color: #854d0e; }
+    .status-DIKONFIRMASI { background: #bbf7d0; color: #166534; }
+    .status-CHECKIN { background: #bfdbfe; color: #1e40af; }
+    .status-CHECKOUT { background: #e2e8f0; color: #475569; }
+    .status-DIBATALKAN { background: #fecaca; color: #991b1b; }
+    .toast { position: fixed; bottom: 20px; right: 20px; padding: 12px 24px; border-radius: 8px; color: white; font-weight: 600; z-index: 1000; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.3s; }
+    .toast.success { background: var(--success); }
+    .toast.error { background: var(--danger); }
+    .toast.hidden { opacity: 0; pointer-events: none; }
+    .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 999; }
+    .modal.hidden { display: none; }
+    .modal-content { background: white; padding: 30px; border-radius: 12px; width: 100%; max-width: 500px; box-shadow: 0 10px 15px rgba(0,0,0,0.1); }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; font-size: 0.9rem; }
+    .detail-item label { display: block; font-size: 0.75rem; color: #64748b; font-weight: 600; }
+    .rooms-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+    .room-card { background: white; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .room-img { background: #e2e8f0; height: 140px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; }
+    .room-body { padding: 16px; }
+    .room-price { font-size: 1.1rem; font-weight: bold; color: var(--primary); margin: 8px 0; }
+    .room-facilities { list-style: none; font-size: 0.85rem; color: #64748b; margin-top: 8px; }
+    .room-facilities li::before { content: "✓ "; color: var(--success); font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Hotel TI Unima</h1>
+    <nav style="display:flex; gap:10px; align-items:center;">
+      <button class="nav-btn active" data-view="form">Buat Reservasi</button>
+      <button class="nav-btn" data-view="list">Daftar Reservasi</button>
+      <button class="nav-btn" data-view="rooms">Daftar Kamar</button>
+      <button class="nav-btn" data-view="dashboard">Dashboard</button>
+      <div id="auth-area" style="margin-left: 15px;"></div>
+    </nav>
+  </header>
+
+  <div class="container">
+    
+    <!-- VIEW: FORM -->
+    <div id="view-form" class="view active">
+      <div class="card">
+        <h2 style="margin-bottom: 20px;">Formulir Reservasi Kamar Hotel</h2>
+        <form id="reservation-form">
+          <h3 style="font-size:1rem; color:#475569; margin-bottom:12px;">1. Informasi Tamu</h3>
+          <div class="form-grid">
+            <div class="form-group"><label>Nama Lengkap *</label><input type="text" name="nama" required></div>
+            <div class="form-group"><label>No. Telepon / WhatsApp *</label><input type="tel" name="telepon" required></div>
+            <div class="form-group"><label>Email *</label><input type="email" name="email" required></div>
+            <div class="form-group"><label>Alamat</label><input type="text" name="alamat"></div>
+          </div>
+
+          <h3 style="font-size:1rem; color:#475569; margin: 20px 0 12px 0;">2. Detail Menginap</h3>
+          <div class="form-grid">
+            <div class="form-group"><label>Tanggal Check-in *</label><input type="date" name="checkin" required></div>
+            <div class="form-group"><label>Tanggal Check-out *</label><input type="date" name="checkout" required></div>
+            <div class="form-group"><label>Jumlah Dewasa</label><input type="number" name="dewasa" value="1" min="1"></div>
+            <div class="form-group"><label>Jumlah Anak</label><input type="number" name="anak" value="0" min="0"></div>
+          </div>
+
+          <h3 style="font-size:1rem; color:#475569; margin: 20px 0 12px 0;">3. Pilihan Kamar</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Tipe Kamar *</label>
+              <select name="tipeKamar" required>
+                <option value="Standard">Standard Room (Rp 450.000)</option>
+                <option value="Deluxe">Deluxe Room (Rp 750.000)</option>
+                <option value="Suite">Suite Room (Rp 1.200.000)</option>
+                <option value="Family">Family Room (Rp 950.000)</option>
+                <option value="Presidential">Presidential Suite (Rp 3.500.000)</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Extra Bed</label><input type="number" name="extraBed" value="0" min="0"></div>
+            <div class="form-group"><label>Preferensi Lokasi</label><input type="text" name="preferensiLokasi" placeholder="Contoh: Lantai atas, dekat lift"></div>
+          </div>
+
+          <h3 style="font-size:1rem; color:#475569; margin: 20px 0 12px 0;">4. Pembayaran & Catatan</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Metode Pembayaran</label>
+              <select name="metodeBayar">
+                <option value="Transfer Bank">Transfer Bank</option>
+                <option value="Kartu Kredit">Kartu Kredit</option>
+                <option value="Bayar di Hotel">Bayar di Hotel (Cash/EDC)</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Jumlah Deposit (Rp)</label><input type="number" name="deposit" value="0"></div>
+            <div class="form-group"><label>Permintaan Khusus</label><textarea name="permintaanKhusus" rows="2"></textarea></div>
+          </div>
+
+          <button type="submit" class="btn" style="margin-top: 15px;">Kirim Reservasi ke Database</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- VIEW: LIST -->
+    <div id="view-list" class="view">
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap:10px;">
+          <div>
+            <h2>Daftar Reservasi Hotel</h2>
+            <p id="list-subtitle" style="font-size: 0.85rem; color: #64748b;">Menghubungkan langsung ke database MySQL XAMPP</p>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="search" placeholder="Cari nama / ID..." oninput="renderTable()" style="padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
+            <select id="filter-status" onchange="renderTable()" style="padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
+              <option value="">Semua Status</option>
+              <option value="MENUNGGU">Menunggu</option>
+              <option value="DIKONFIRMASI">Dikonfirmasi</option>
+              <option value="CHECKIN">Check-in</option>
+              <option value="CHECKOUT">Check-out</option>
+              <option value="DIBATALKAN">Dibatalkan</option>
+            </select>
+          </div>
+        </div>
+        <div style="overflow-x: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Tamu</th>
+                <th>Check-in</th>
+                <th>Check-out</th>
+                <th>Kamar</th>
+                <th>Status</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="reservation-tbody">
+              <tr><td colspan="7" style="text-align:center; color:#64748b; padding:32px;">Memuat data dari database...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW: ROOMS -->
+    <div id="view-rooms" class="view">
+      <div class="card">
+        <h2 style="margin-bottom: 20px;">Daftar Tipe Kamar & Fasilitas</h2>
+        <div class="rooms-grid" id="rooms-grid"></div>
+      </div>
+    </div>
+
+    <!-- VIEW: DASHBOARD -->
+    <div id="view-dashboard" class="view">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 20px;">
+        <div class="card" style="text-align: center;">
+          <h3 style="font-size: 0.9rem; color: #64748b;">Total Reservasi</h3>
+          <p id="stat-total" style="font-size: 2rem; font-weight: bold; color: var(--primary);">0</p>
+        </div>
+        <div class="card" style="text-align: center;">
+          <h3 style="font-size: 0.9rem; color: #64748b;">Reservasi Aktif</h3>
+          <p id="stat-confirmed" style="font-size: 2rem; font-weight: bold; color: var(--success);">0</p>
+        </div>
+        <div class="card" style="text-align: center;">
+          <h3 style="font-size: 0.9rem; color: #64748b;">Menunggu Konfirmasi</h3>
+          <p id="stat-pending" style="font-size: 2rem; font-weight: bold; color: var(--warning);">0</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- DETAIL MODAL -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-content">
+      <div id="modal-body"></div>
+      <button class="btn btn-outline" id="modal-close" style="width: 100%; margin-top: 16px;">Tutup</button>
+    </div>
+  </div>
+
+  <!-- LOGIN MODAL -->
+  <div id="login-modal" class="modal hidden">
+    <div class="modal-content">
+      <h3 style="margin-bottom: 16px;">Login Administrator</h3>
+      <form id="login-form">
+        <div class="form-group" style="margin-bottom: 12px;"><label>Username</label><input type="text" id="username" required value="admin"></div>
+        <div class="form-group" style="margin-bottom: 20px;"><label>Password</label><input type="password" id="password" required value="admin123"></div>
+        <button type="submit" class="btn" style="width: 100%;">Masuk</button>
+      </form>
+      <button class="btn btn-outline" id="login-modal-close" style="width: 100%; margin-top: 10px;">Batal</button>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = "/api/reservasi";
+
+    const DAFTAR_KAMAR = [
+      { tipe: "Standard", harga: 450000, kapasitas: 2, fasilitas: ["AC", "TV", "WiFi", "Kamar Mandi Dalam"] },
+      { tipe: "Deluxe", harga: 750000, kapasitas: 2, fasilitas: ["AC", "TV 43\"", "WiFi", "Mini Bar", "Bathtub"] },
+      { tipe: "Suite", harga: 1200000, kapasitas: 3, fasilitas: ["AC", "TV 55\"", "WiFi", "Living Room", "Jacuzzi"] },
+      { tipe: "Family", harga: 950000, kapasitas: 4, fasilitas: ["AC", "TV", "WiFi", "2 Bed", "Sofa Bed"] },
+      { tipe: "Presidential", harga: 3500000, kapasitas: 4, fasilitas: ["AC", "TV 65\"", "WiFi", "Private Pool", "Butler Service"] }
+    ];
+
+    class AuthService {
+      constructor() {
+        this._key = "hotel_admin_session";
+        this._users = [{ username: "admin", password: "admin123", name: "Administrator" }];
+      }
+      login(username, password) {
+        const user = this._users.find(u => u.username === username && u.password === password);
+        if (!user) return false;
+        sessionStorage.setItem(this._key, JSON.stringify({ username: user.username, name: user.name }));
+        return true;
+      }
+      logout() { sessionStorage.removeItem(this._key); }
+      isLoggedIn() { return !!sessionStorage.getItem(this._key); }
+      getUser() { try { return JSON.parse(sessionStorage.getItem(this._key)); } catch { return null; } }
+    }
+
+    const auth = new AuthService();
+
+    function showToast(msg, type = "success") {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.className = `toast ${type}`;
+      setTimeout(() => t.classList.add("hidden"), 3000);
+    }
+
+    function formatDate(str) {
+      if (!str) return "-";
+      return new Date(str).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+    }
+
+    async function fetchReservasi() {
+      try {
+        const res = await fetch(API_URL);
+        return await res.json();
+      } catch (err) {
+        console.error("Gagal mengambil data dari database:", err);
+        return [];
+      }
+    }
+
+    async function submitReservasi(data) {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) throw new Error("Gagal menyimpan ke database");
+      return await res.json();
+    }
+
+    async function updateStatusAPI(id, status) {
+      const res = await fetch(`${API_URL}/${id}/status`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status })
+      });
+      if (!res.ok) throw new Error("Gagal memperbarui status");
+      return await res.json();
+    }
+
+    async function renderTable() {
+      const search = document.getElementById("search").value.toLowerCase();
+      const statusFilter = document.getElementById("filter-status").value;
+      let list = await fetchReservasi();
+
+      if (search) {
+        list = list.filter(r =>
+          (r.id && r.id.toLowerCase().includes(search)) ||
+          (r.nama && r.nama.toLowerCase().includes(search)) ||
+          (r.telepon && r.telepon.includes(search))
+        );
+      }
+      if (statusFilter) list = list.filter(r => r.status === statusFilter);
+
+      const tbody = document.getElementById("reservation-tbody");
+      const isAdmin = auth.isLoggedIn();
+      document.getElementById("list-subtitle").textContent = isAdmin
+        ? "Anda login sebagai admin — tersambung ke database MySQL"
+        : "Mode tamu — membaca data langsung dari database XAMPP";
+
+      if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#64748b;padding:32px;">Belum ada data di database</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = list.map(r => {
+        let actions = `<button class="btn btn-sm btn-outline" onclick="showDetail('${r.id}')">Detail</button>`;
+        if (isAdmin) {
+          if (r.status === "MENUNGGU") {
+            actions += `<button class="btn btn-sm btn-success" onclick="aksiStatus('${r.id}','DIKONFIRMASI')">Konfirmasi</button>
+              <button class="btn btn-sm btn-danger" onclick="aksiStatus('${r.id}','DIBATALKAN')">Batal</button>`;
+          } else if (r.status === "DIKONFIRMASI") {
+            actions += `<button class="btn btn-sm btn-primary" onclick="aksiStatus('${r.id}','CHECKIN')">Check-in</button>
+              <button class="btn btn-sm btn-danger" onclick="aksiStatus('${r.id}','DIBATALKAN')">Batal</button>`;
+          } else if (r.status === "CHECKIN") {
+            actions += `<button class="btn btn-sm btn-primary" onclick="aksiStatus('${r.id}','CHECKOUT')">Check-out</button>`;
+          }
+        }
+        return `<tr>
+          <td><strong>${r.id}</strong></td>
+          <td>${r.nama}<br><small style="color:#64748b">${r.telepon}</small></td>
+          <td>${formatDate(r.checkin)}</td>
+          <td>${formatDate(r.checkout)}</td>
+          <td>${r.tipeKamar}${r.extraBed > 0 ? ` +${r.extraBed} bed` : ""}</td>
+          <td><span class="status-badge status-${r.status}">${r.status}</span></td>
+          <td><div class="action-btns">${actions}</div></td>
+        </tr>`;
+      }).join("");
+    }
+
+    async function aksiStatus(id, newStatus) {
+      try {
+        await updateStatusAPI(id, newStatus);
+        showToast(`Status ${id} berhasil diubah ke ${newStatus}`, "success");
+        renderTable();
+        updateStats();
+      } catch (err) {
+        showToast(err.message, "error");
+      }
+    }
+
+    async function showDetail(id) {
+      const list = await fetchReservasi();
+      const r = list.find(x => x.id === id);
+      if (!r) return;
+      document.getElementById("modal-body").innerHTML = `
+        <h3 style="margin-bottom:4px;">Detail Reservasi (Database)</h3>
+        <p style="color:#64748b;font-size:0.9rem;margin-bottom:16px;">${r.id} · <span class="status-badge status-${r.status}">${r.status}</span></p>
+        <div class="detail-grid">
+          <div class="detail-item"><label>Nama Tamu</label><span>${r.nama}</span></div>
+          <div class="detail-item"><label>Telepon</label><span>${r.telepon}</span></div>
+          <div class="detail-item"><label>Email</label><span>${r.email}</span></div>
+          <div class="detail-item"><label>Alamat</label><span>${r.alamat || "-"}</span></div>
+          <div class="detail-item"><label>Check-in</label><span>${formatDate(r.checkin)}</span></div>
+          <div class="detail-item"><label>Check-out</label><span>${formatDate(r.checkout)}</span></div>
+          <div class="detail-item"><label>Tamu</label><span>${r.dewasa} dewasa, ${r.anak} anak</span></div>
+          <div class="detail-item"><label>Tipe Kamar</label><span>${r.tipeKamar}</span></div>
+          <div class="detail-item"><label>Metode Bayar</label><span>${r.metodeBayar}</span></div>
+          <div class="detail-item"><label>Deposit</label><span>Rp ${Number(r.deposit || 0).toLocaleString("id-ID")}</span></div>
+        </div>`;
+      document.getElementById("modal").classList.remove("hidden");
+    }
+
+    async function updateStats() {
+      const list = await fetchReservasi();
+      document.getElementById("stat-total").textContent = list.length;
+      document.getElementById("stat-confirmed").textContent = list.filter(r => ["DIKONFIRMASI", "CHECKIN", "CHECKOUT"].includes(r.status)).length;
+      document.getElementById("stat-pending").textContent = list.filter(r => r.status === "MENUNGGU").length;
+    }
+
+    function renderRooms() {
+      document.getElementById("rooms-grid").innerHTML = DAFTAR_KAMAR.map(k => `
+        <div class="room-card">
+          <div class="room-img">🛏️</div>
+          <div class="room-body">
+            <h4>${k.tipe} Room</h4>
+            <p style="font-size:0.85rem;color:#64748b">Kapasitas: ${k.kapasitas} orang</p>
+            <div class="room-price">Rp ${k.harga.toLocaleString("id-ID")} <span>/ malam</span></div>
+            <ul class="room-facilities">${k.fasilitas.map(f => "<li>" + f + "</li>").join("")}</ul>
+          </div>
+        </div>`).join("");
+    }
+
+    function updateAuthUI() {
+      const area = document.getElementById("auth-area");
+      const adminBtns = document.querySelectorAll(".admin-only");
+      const user = auth.getUser();
+      if (user) {
+        area.innerHTML = `<span class="auth-user" style="color:white; font-size:0.9rem; margin-right:8px;">👤 <strong>${user.name}</strong></span>
+          <button class="btn btn-sm btn-outline" id="btn-logout" style="color:white; border-color:white;">Logout</button>`;
+        document.getElementById("btn-logout").addEventListener("click", () => {
+          auth.logout();
+          updateAuthUI();
+          showToast("Berhasil logout", "success");
+          renderTable();
+        });
+      } else {
+        area.innerHTML = `<button class="btn btn-sm" id="btn-show-login" style="background:white; color:var(--primary);">Login Admin</button>`;
+        document.getElementById("btn-show-login").addEventListener("click", () => {
+          document.getElementById("login-modal").classList.remove("hidden");
+        });
+      }
+    }
+
+    document.getElementById("reservation-form").addEventListener("submit", async e => {
+      e.preventDefault();
+      const formData = Object.fromEntries(new FormData(e.target).entries());
+      try {
+        const result = await submitReservasi(formData);
+        showToast(`Reservasi ${result.id} berhasil tersimpan di database MySQL!`, "success");
+        e.target.reset();
+        updateStats();
+        document.querySelector('[data-view="list"]').click();
+      } catch (err) {
+        showToast(err.message, "error");
+      }
+    });
+
+    document.querySelectorAll(".nav-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById(`view-${btn.dataset.view}`).classList.add("active");
+        if (btn.dataset.view === "list") renderTable();
+        if (btn.dataset.view === "dashboard") updateStats();
+        if (btn.dataset.view === "rooms") renderRooms();
+      });
+    });
+
+    document.getElementById("login-form").addEventListener("submit", e => {
+      e.preventDefault();
+      if (auth.login(document.getElementById("username").value, document.getElementById("password").value)) {
+        document.getElementById("login-modal").classList.add("hidden");
+        updateAuthUI();
+        renderTable();
+        showToast("Login admin berhasil!", "success");
+      } else {
+        showToast("Username atau password salah!", "error");
+      }
+    });
+
+    document.getElementById("login-modal-close").addEventListener("click", () => document.getElementById("login-modal").classList.add("hidden"));
+    document.getElementById("modal-close").addEventListener("click", () => document.getElementById("modal").classList.add("hidden"));
+
+    updateAuthUI();
+    updateStats();
+    renderRooms();
+  </script>
+</body>
+</html>
